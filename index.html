@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App de Riego</title>
+<meta name="theme-color" content="#4caf50">
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f5f0;}
+header { background:#4caf50; color:white; text-align:center; padding:20px; font-size:24px; }
+#controls { display:flex; justify-content:space-between; padding:0 10px; margin:10px 0; }
+#calendar { display:flex; justify-content:space-around; margin:10px 0; }
+.dia { width:14%; background:#a5d6a7; border-radius:8px; padding:5px; min-height:80px; display:flex; flex-direction:column; align-items:center; position:relative; }
+.dia h4 { margin:5px 0; font-size:14px;}
+.dia .fecha { font-size:12px; color:#333; }
+.arbol { background:#c8e6c9; padding:5px 5px; margin:2px 0; border-radius:8px; width:90%; text-align:center; font-size:12px; cursor:pointer; position:relative;}
+.arbol:hover { opacity:0.9; }
+
+/* Tarjeta flotante moderna */
+.tooltip {
+  position: absolute;
+  background: #ffffffee; 
+  color: #333;
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 14px;
+  white-space: normal;
+  display: none;
+  z-index: 20;
+  max-width: 220px;
+  line-height: 1.4em;
+}
+
+#btnAgregar { width:90%; padding:15px; margin:20px auto; display:block; background:#4caf50; color:white; border:none; border-radius:16px; font-size:18px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<header>App de Riego</header>
+
+<div id="controls">
+  <button id="prevWeek">&lt; Semana anterior</button>
+  <button id="nextWeek">Semana siguiente &gt;</button>
+</div>
+
+<div id="calendar"></div>
+
+<button id="btnAgregar">Agregar Árbol</button>
+
+<script>
+let arboles = JSON.parse(localStorage.getItem('arboles') || '[]');
+let startOfWeek = getStartOfWeek(new Date());
+
+function getStartOfWeek(date){
+    const day = date.getDay() || 7;
+    const monday = new Date(date);
+    monday.setDate(date.getDate() - day + 1);
+    monday.setHours(0,0,0,0);
+    return monday;
+}
+
+function guardarArboles(){ localStorage.setItem('arboles', JSON.stringify(arboles)); }
+
+function mostrarCalendario(){
+    const calendarEl=document.getElementById('calendar');
+    calendarEl.innerHTML='';
+    const dias=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+    for(let i=0;i<7;i++){
+        const div=document.createElement('div');
+        div.className='dia';
+        const fecha = new Date(startOfWeek); fecha.setDate(fecha.getDate()+i);
+        div.dataset.fecha = fecha.toISOString();
+        div.innerHTML = `<h4>${dias[i]}</h4><div class="fecha">${fecha.getDate()}/${fecha.getMonth()+1}</div><div class="arbolesDia"></div>`;
+        calendarEl.appendChild(div);
+    }
+
+    // Colocar árboles según frecuencia
+    arboles.forEach((arbol,index)=>{
+        const fechaIngreso = new Date(arbol.ultimaRiego);
+        fechaIngreso.setHours(0,0,0,0);
+
+        for(let i=0;i<7;i++){
+            const fechaDia = new Date(startOfWeek); fechaDia.setDate(fechaDia.getDate()+i);
+            fechaDia.setHours(0,0,0,0);
+
+            const diffDias = Math.floor((fechaDia - fechaIngreso)/(1000*60*60*24));
+
+            if(diffDias>=0 && diffDias % arbol.frecuencia===0){
+                const container = calendarEl.children[i].querySelector('.arbolesDia');
+                const div = document.createElement('div');
+                div.className='arbol';
+                div.textContent = arbol.nombre;
+
+                // Crear tarjeta flotante
+                const tooltip = document.createElement('div');
+                tooltip.className='tooltip';
+
+                // CALCULO DEL PROXIMO RIEGO: SUMAR FRECUENCIA A LA FECHA DE LA CELDA
+                const proximoRiego = new Date(fechaDia);
+                proximoRiego.setDate(proximoRiego.getDate() + arbol.frecuencia);
+
+                const diasSemana=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+                tooltip.innerHTML = `<strong>Frecuencia:</strong> cada ${arbol.frecuencia} días<br>
+                                     <strong>Próximo riego:</strong> ${diasSemana[proximoRiego.getDay()]} ${proximoRiego.getDate()}`;
+
+                div.appendChild(tooltip);
+
+                // Posicionar tarjeta flotante arriba o abajo según espacio
+                div.onmouseover = ()=>{
+                    tooltip.style.display='block';
+                    const rect = div.getBoundingClientRect();
+                    const ventanaAlto = window.innerHeight;
+                    if(rect.top + rect.height + tooltip.offsetHeight + 10 > ventanaAlto){
+                        tooltip.style.top = -tooltip.offsetHeight - 8 + 'px';
+                    } else {
+                        tooltip.style.top = rect.height + 4 + 'px';
+                    }
+                    tooltip.style.left = '0px';
+                };
+                div.onmouseout = ()=>{ tooltip.style.display='none'; };
+
+                // Editar al click
+                div.onclick=()=>{
+                    const n=prompt('Nombre del árbol:',arbol.nombre);
+                    const f=prompt('Frecuencia en días:',arbol.frecuencia);
+                    if(n && f){ arboles[index].nombre=n; arboles[index].frecuencia=parseInt(f); guardarArboles(); mostrarCalendario();}
+                };
+                // Borrar al doble click
+                div.ondblclick=()=>{
+                    if(confirm('¿Eliminar este árbol?')){arboles.splice(index,1); guardarArboles(); mostrarCalendario();}
+                };
+
+                container.appendChild(div);
+            }
+        }
+    });
+}
+
+// Navegar semanas
+document.getElementById('prevWeek').onclick=()=>{
+    startOfWeek.setDate(startOfWeek.getDate()-7);
+    mostrarCalendario();
+};
+document.getElementById('nextWeek').onclick=()=>{
+    startOfWeek.setDate(startOfWeek.getDate()+7);
+    mostrarCalendario();
+};
+
+// Agregar árbol
+document.getElementById('btnAgregar').onclick=()=>{
+    const n=prompt('Nombre del árbol:'); 
+    const f=prompt('Cada cuántos días se riega:');
+    if(n && f){ arboles.push({nombre:n,frecuencia:parseInt(f),ultimaRiego:Date.now()}); guardarArboles(); mostrarCalendario();}
+};
+
+// Notificaciones
+if('Notification' in window){ Notification.requestPermission(); }
+function notificarRiego(){
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    arboles.forEach(arbol=>{
+        const ultima=new Date(arbol.ultimaRiego); ultima.setHours(0,0,0,0);
+        const diffDias=Math.floor((hoy-ultima)/(1000*60*60*24));
+        if(diffDias>=arbol.frecuencia && Notification.permission==='granted'){
+            new Notification(`Riego de ${arbol.nombre}`, {body:`Hoy toca regar ${arbol.nombre} 🌱`});
+        }
+    });
+}
+setInterval(notificarRiego,60000);
+
+mostrarCalendario();
+</script>
+
+</body>
+</html>
