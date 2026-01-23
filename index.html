@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>App de Riego</title>
@@ -171,6 +173,11 @@ setInterval(notificarRiego,60000);
 
 mostrarCalendario();
 </script>
-
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => console.log('Service Worker registrado'))
+    .catch(err => console.log('Error SW:', err));
+}
 </body>
+
 </html>
