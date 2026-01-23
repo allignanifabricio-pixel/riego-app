@@ -80,10 +80,6 @@
       navigator.serviceWorker.register('sw.js');
     }
 
-    // Pedir permiso de notificaciones (no rompe instalación)
-    if ('Notification' in window) {
-      Notification.requestPermission();
-    }
 
     const trees = JSON.parse(localStorage.getItem('trees') || '[]');
 
@@ -151,4 +147,5 @@
   </script>
 </body>
 </html>
+
 
