@@ -2,78 +2,79 @@
 
 
 <script>
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('sw.js');
-}
+ if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
 
+  if ('Notification' in window) {
+    Notification.requestPermission();
+  }
 
-if ('Notification' in window) {
-Notification.requestPermission();
-}
+  const trees = JSON.parse(localStorage.getItem('trees') || '[]');
 
+  function addTree() {
+    const nameInput = document.getElementById('name');
+    const daysInput = document.getElementById('days');
 
-const trees = JSON.parse(localStorage.getItem('trees') || '[]');
+    const name = nameInput.value.trim();
+    const days = parseInt(daysInput.value);
 
+    if (!name || !days) return;
 
-function addTree() {
-const nameInput = document.getElementById('name');
-const daysInput = document.getElementById('days');
-const name = nameInput.value.trim();
-const days = parseInt(daysInput.value);
-if (!name || !days) return;
+    trees.push({
+      name: name,
+      days: days,
+      last: Date.now()
+    });
 
+    localStorage.setItem('trees', JSON.stringify(trees));
 
-trees.push({ name, days, last: Date.now() });
-localStorage.setItem('trees', JSON.stringify(trees));
+    // limpiar campos
+    nameInput.value = '';
+    daysInput.value = '';
 
+    render();
+  }
 
-nameInput.value = '';
-daysInput.value = '';
+  function water(i) {
+    trees[i].last = Date.now();
+    localStorage.setItem('trees', JSON.stringify(trees));
+    render();
+  }
 
+  function render() {
+    const list = document.getElementById('list');
+    const calendar = document.getElementById('calendar');
 
-render();
-}
+    list.innerHTML = '';
+    calendar.innerHTML = '';
 
+    const now = new Date();
+    const weekEnd = new Date(now.getTime() + 7 * 86400000);
 
-function water(i) {
-trees[i].last = Date.now();
-localStorage.setItem('trees', JSON.stringify(trees));
-render();
-}
+    trees.forEach((t, i) => {
+      const next = new Date(t.last + t.days * 86400000);
 
+      const div = document.createElement('div');
+      div.className = 'tree';
+      div.innerHTML = `
+        <b>${t.name}</b><br>
+        Próximo riego: ${next.toLocaleDateString()}<br>
+        <button onclick="water(${i})">Regado hoy</button>
+      `;
+      list.appendChild(div);
 
-function render() {
-const list = document.getElementById('list');
-const calendar = document.getElementById('calendar');
-list.innerHTML = '';
-calendar.innerHTML = '';
+      if (next >= now && next <= weekEnd) {
+        const d = document.createElement('div');
+        d.className = 'day';
+        d.innerText = `${next.toLocaleDateString()} (12:00) → ${t.name}`;
+        calendar.appendChild(d);
+      }
+    });
+  }
 
-
-const now = new Date();
-const weekEnd = new Date(now.getTime() + 7 * 86400000);
-
-
-trees.forEach((t, i) => {
-const next = new Date(t.last + t.days * 86400000);
-
-
-const div = document.createElement('div');
-div.className = 'tree';
-div.innerHTML = `<b>${t.name}</b><br>Próximo riego: ${next.toLocaleDateString()}<br><button onclick="water(${i})">Regado hoy</button>`;
-list.appendChild(div);
-
-
-if (next >= now && next <= weekEnd) {
-const d = document.createElement('div');
-d.className = 'day';
-d.innerText = `${next.toLocaleDateString()} (12:00) → ${t.name}`;
-calendar.appendChild(d);
-}
-});
-}
-
-
-render();
+  render();
 </script>
 </body>
 </html>
+
