@@ -3,8 +3,7 @@ const filesToCache = [
   './',
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  './icon-192.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -18,3 +17,4 @@ self.addEventListener('fetch', (e) => {
     caches.match(e.request).then((response) => response || fetch(e.request))
   );
 });
+
