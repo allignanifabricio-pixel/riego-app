@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recordatorio de Riego</title>
 
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/riego-app/manifest.json">
 
   <style>
     body {
-      font-family: sans-serif;
-      padding: 16px;
+      font-family: system-ui, sans-serif;
       background: #f0fdf4;
+      padding: 16px;
     }
 
-    h1 {
-      font-size: 1.5rem;
+    h1, h2 {
+      margin-top: 20px;
     }
 
     input, button {
@@ -24,6 +24,7 @@
       margin: 8px 0;
       font-size: 1.1rem;
       border-radius: 10px;
+      box-sizing: border-box;
     }
 
     input {
@@ -45,7 +46,7 @@
 
     .tree {
       background: #dcfce7;
-      padding: 10px;
+      padding: 12px;
       margin-top: 10px;
       border-radius: 10px;
     }
@@ -55,6 +56,7 @@
       padding: 8px;
       margin-top: 6px;
       border-radius: 8px;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -62,86 +64,90 @@
 <body>
   <h1>🌳 Recordatorio de Riego</h1>
 
-  <input id="name" placeholder="Nombre del árbol" />
-  <input id="days" type="number" placeholder="Cada cuántos días regar" />
+  <input id="name" placeholder="Nombre del árbol">
+  <input id="days" type="number" placeholder="Cada cuántos días regar">
   <button onclick="addTree()">Agregar árbol</button>
 
   <h2>Mis árboles</h2>
   <div id="list"></div>
 
-  <h2>📅 Riegos de la semana</h2>
+  <h2>📅 Riegos de la semana (12:00)</h2>
   <div id="calendar"></div>
 
   <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/riego-app/sw.js');
-  }
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/riego-app/sw.js');
+    }
 
-  if ('Notification' in window) {
-    Notification.requestPermission();
-  }
+    // Pedir permiso de notificaciones (no rompe instalación)
+    if ('Notification' in window) {
+      Notification.requestPermission();
+    }
 
-  const trees = JSON.parse(localStorage.getItem('trees') || '[]');
+    const trees = JSON.parse(localStorage.getItem('trees') || '[]');
 
-  function addTree() {
-    const nameInput = document.getElementById('name');
-    const daysInput = document.getElementById('days');
+    function addTree() {
+      const nameInput = document.getElementById('name');
+      const daysInput = document.getElementById('days');
 
-    const name = nameInput.value.trim();
-    const days = parseInt(daysInput.value);
+      const name = nameInput.value.trim();
+      const days = parseInt(daysInput.value);
 
-    if (!name || !days) return;
+      if (!name || !days) return;
 
-    trees.push({ name, days, last: Date.now() });
-    localStorage.setItem('trees', JSON.stringify(trees));
+      trees.push({
+        name,
+        days,
+        last: Date.now()
+      });
 
-    nameInput.value = '';
-    daysInput.value = '';
+      localStorage.setItem('trees', JSON.stringify(trees));
+
+      nameInput.value = '';
+      daysInput.value = '';
+
+      render();
+    }
+
+    function water(index) {
+      trees[index].last = Date.now();
+      localStorage.setItem('trees', JSON.stringify(trees));
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+      const calendar = document.getElementById('calendar');
+
+      list.innerHTML = '';
+      calendar.innerHTML = '';
+
+      const now = new Date();
+      const weekEnd = new Date(now.getTime() + 7 * 86400000);
+
+      trees.forEach((tree, i) => {
+        const next = new Date(tree.last + tree.days * 86400000);
+
+        const div = document.createElement('div');
+        div.className = 'tree';
+        div.innerHTML = `
+          <b>${tree.name}</b><br>
+          Próximo riego: ${next.toLocaleDateString()}<br>
+          <button onclick="water(${i})">Regado hoy</button>
+        `;
+        list.appendChild(div);
+
+        if (next >= now && next <= weekEnd) {
+          const d = document.createElement('div');
+          d.className = 'day';
+          d.textContent = `${next.toLocaleDateString()} (12:00) → ${tree.name}`;
+          calendar.appendChild(d);
+        }
+      });
+    }
 
     render();
-  }
-
-  function water(i) {
-    trees[i].last = Date.now();
-    localStorage.setItem('trees', JSON.stringify(trees));
-    render();
-  }
-
-  function render() {
-    const list = document.getElementById('list');
-    const calendar = document.getElementById('calendar');
-
-    list.innerHTML = '';
-    calendar.innerHTML = '';
-
-    const now = new Date();
-    const weekEnd = new Date(now.getTime() + 7 * 86400000);
-
-    trees.forEach((t, i) => {
-      const next = new Date(t.last + t.days * 86400000);
-
-      const div = document.createElement('div');
-      div.className = 'tree';
-      div.innerHTML = `
-        <b>${t.name}</b><br>
-        Próximo riego: ${next.toLocaleDateString()}<br>
-        <button onclick="water(${i})">Regado hoy</button>
-      `;
-      list.appendChild(div);
-
-      if (next >= now && next <= weekEnd) {
-        const d = document.createElement('div');
-        d.className = 'day';
-        d.innerText = `${next.toLocaleDateString()} (12:00) → ${t.name}`;
-        calendar.appendChild(d);
-      }
-    });
-  }
-
-  render();
-</script>
+  </script>
 </body>
 </html>
-
-
-
