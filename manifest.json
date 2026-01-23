@@ -1,7 +1,8 @@
 {
   "name": "Recordatorio de Riego",
   "short_name": "Riego",
-  "start_url": "/riego-app/",
+  "start_url": "/riego-app/index.html",
+  "scope": "/riego.app/",
   "display": "standalone",
   "background_color": "#f0fdf4",
   "theme_color": "#16a34a",
@@ -13,6 +14,7 @@
     }
   ]
 }
+
 
 
 
