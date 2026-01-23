@@ -1,30 +1,4 @@
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recordatorio de Riego</title>
-
-  <link rel="manifest" href="manifest.json">
-</head>
-<input id="name" placeholder="Nombre del árbol" />
-<input id="days" type="number" placeholder="Cada cuántos días regar" />
-<button onclick="addTree()">Agregar árbol</button>
-
-
-<h2>Mis árboles</h2>
-<div id="list"></div>
-
-
-<h2>📅 Riegos de la semana</h2>
-<div id="calendar" class="week"></div>
-
-
-<script>
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('sw.js');
-}
-
-
-if ('Notification' in window) {
+<html lang="es">
 Notification.requestPermission();
 }
 
@@ -33,13 +7,21 @@ const trees = JSON.parse(localStorage.getItem('trees') || '[]');
 
 
 function addTree() {
-const name = document.getElementById('name').value;
-const days = parseInt(document.getElementById('days').value);
+const nameInput = document.getElementById('name');
+const daysInput = document.getElementById('days');
+const name = nameInput.value.trim();
+const days = parseInt(daysInput.value);
 if (!name || !days) return;
 
 
 trees.push({ name, days, last: Date.now() });
 localStorage.setItem('trees', JSON.stringify(trees));
+
+
+nameInput.value = '';
+daysInput.value = '';
+
+
 render();
 }
 
@@ -85,5 +67,4 @@ calendar.appendChild(d);
 render();
 </script>
 </body>
-
 </html>
