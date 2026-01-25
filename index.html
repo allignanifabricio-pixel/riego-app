@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Riego de Árboles</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2e7d32">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    background: #f1f8f4;
+    touch-action: manipulation;
+}
+
+/* HEADER */
+header {
+    background: #2e7d32;
+    color: white;
+    padding: 16px;
+    text-align: center;
+    font-size: 20px;
+}
+
+/* CONTROLES */
+.controles {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+.controles button {
+    flex: 1;
+    margin: 0 4px;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 14px;
+    border: none;
+    background: #4caf50;
+    color: white;
+}
+
+/* CALENDARIO */
+#calendario {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    padding: 10px;
+}
+
+.dia {
+    background: white;
+    border-radius: 16px;
+    padding: 8px;
+    min-height: 120px;
+    position: relative;
+    animation: aparecer .3s ease;
+}
+
+@keyframes aparecer {
+    from { transform: scale(.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.fecha {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.hoy {
+    border: 2px solid #2e7d32;
+}
+
+/* TARJETAS */
+.arbol {
+    margin-top: 6px;
+    padding: 12px;
+    border-radius: 16px;
+    font-size: 15px;
+    color: white;
+    text-align: center;
+    transition: transform .15s;
+}
+
+.arbol:active {
+    transform: scale(.95);
+}
+
+.urgente { background: #e53935; }
+.pronto { background: #fbc02d; color:#333; }
+.normal { background: #43a047; }
+
+.sin-arboles {
+    font-size: 12px;
+    color: #bbb;
+    text-align: center;
+    margin-top: 22px;
+}
+
+/* TOOLTIP */
+.tooltip {
+    position: absolute;
+    background: white;
+    color: #333;
+    padding: 14px;
+    border-radius: 16px;
+    box-shadow: 0 8px 22px rgba(0,0,0,.3);
+    font-size: 14px;
+    width: 220px;
+    z-index: 100;
+}
+
+/* BOTÓN AGREGAR */
+#agregar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 66px;
+    height: 66px;
+    border-radius: 50%;
+    background: #2e7d32;
+    color: white;
+    font-size: 34px;
+    border: none;
+    box-shadow: 0 8px 20px rgba(0,0,0,.35);
+}
+
+/* MODAL */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.activo { display: flex; }
+
+.modal-contenido {
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+    width: 90%;
+    max-width: 320px;
+}
+
+.modal-contenido h2 {
+    margin-top: 0;
+}
+
+.modal-contenido input {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+}
+
+.modal-contenido button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 14px;
+    border: none;
+    margin-top: 8px;
+}
+
+.guardar { background:#2e7d32; color:white; }
+.borrar { background:#e53935; color:white; }
+.cancelar { background:#ccc; }
+</style>
+</head>
+
+<body>
+
+<header>🌿 Riego de Árboles</header>
+
+<div class="controles">
+    <button onclick="cambiarSemana(-1)">◀ Semana</button>
+    <button onclick="cambiarSemana(1)">Semana ▶</button>
+</div>
+
+<div id="calendario"></div>
+
+<button id="agregar" onclick="abrirModal()">＋</button>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+    <div class="modal-contenido">
+        <h2 id="tituloModal">Agregar árbol</h2>
+        <input id="nombre" placeholder="Nombre del árbol">
+        <input id="frecuencia" type="number" placeholder="Frecuencia (días)">
+        <button class="guardar" onclick="guardarArbol()">Guardar</button>
+        <button class="borrar" onclick="eliminarArbol()">Eliminar</button>
+        <button class="cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
+</div>
+
+<script>
+let arboles = [];
+let semanaOffset = 0;
+let editIndex = null;
+
+function cargar() {
+    arboles = JSON.parse(localStorage.getItem("arboles")) || [];
+}
+
+function guardar() {
+    localStorage.setItem("arboles", JSON.stringify(arboles));
+}
+
+function cambiarSemana(d) {
+    semanaOffset += d;
+    render();
+}
+
+function render() {
+    const cal = document.getElementById("calendario");
+    cal.innerHTML = "";
+
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const inicio = new Date(hoy);
+    inicio.setDate(hoy.getDate() - hoy.getDay() + semanaOffset*7);
+
+    for (let i=0;i<7;i++) {
+        const fecha = new Date(inicio);
+        fecha.setDate(inicio.getDate()+i);
+
+        const dia = document.createElement("div");
+        dia.className="dia";
+        if (+fecha===+hoy) dia.classList.add("hoy");
+
+        dia.innerHTML=`<div class="fecha">${fecha.getDate()}</div>`;
+        let hay=false;
+
+        arboles.forEach((a,idx)=>{
+            const ini=new Date(a.fecha); ini.setHours(0,0,0,0);
+            const diff=Math.floor((fecha-ini)/86400000);
+            if(diff>=0 && diff%a.freq===0){
+                hay=true;
+                const card=document.createElement("div");
+                card.className=`arbol ${diff===0?'urgente':diff<=2?'pronto':'normal'}`;
+                card.textContent=a.nombre;
+
+                card.onclick=(e)=>{
+                    document.querySelectorAll(".tooltip").forEach(t=>t.remove());
+                    const tip=document.createElement("div");
+                    const prox=new Date(fecha);
+                    prox.setDate(prox.getDate()+a.freq);
+                    tip.className="tooltip";
+                    tip.innerHTML=`<strong>${a.nombre}</strong><br>
+                        Cada ${a.freq} días<br>
+                        Próximo riego:<br>
+                        ${prox.getDate()}/${prox.getMonth()+1}`;
+                    dia.appendChild(tip);
+                    tip.style.top=e.target.offsetTop+40+"px";
+                    tip.onclick=()=>abrirModal(idx);
+                    setTimeout(()=>tip.remove(),4000);
+                };
+
+                dia.appendChild(card);
+            }
+        });
+
+        if(!hay) dia.innerHTML+=`<div class="sin-arboles">Sin riegos</div>`;
+        cal.appendChild(dia);
+    }
+}
+
+function abrirModal(i=null){
+    editIndex=i;
+    document.getElementById("modal").classList.add("activo");
+    if(i!==null){
+        const a=arboles[i];
+        nombre.value=a.nombre;
+        frecuencia.value=a.freq;
+        tituloModal.textContent="Editar árbol";
+    } else {
+        nombre.value="";
+        frecuencia.value="";
+        tituloModal.textContent="Agregar árbol";
+    }
+}
+
+function cerrarModal(){
+    modal.classList.remove("activo");
+}
+
+function guardarArbol(){
+    if(!nombre.value||!frecuencia.value) return;
+    const data={nombre:nombre.value,freq:+frecuencia.value,fecha:new Date().toISOString().split("T")[0]};
+    if(editIndex!==null) arboles[editIndex]=data;
+    else arboles.push(data);
+    guardar(); cerrarModal(); render();
+}
+
+function eliminarArbol(){
+    if(editIndex!==null){
+        arboles.splice(editIndex,1);
+        guardar(); cerrarModal(); render();
+    }
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+    cargar();
+    render();
+});
+</script>
+
+</body>
+</html>
