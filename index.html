@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Riego de Árboles</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2e7d32">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f1f8e9;
+    }
+
+    header {
+      background: #2e7d32;
+      color: white;
+      padding: 14px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    #calendario {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      touch-action: pan-y;
+    }
+
+    .dia {
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .dia.hoy {
+      border: 2px solid #2e7d32;
+    }
+
+    .titulo-dia {
+      font-weight: bold;
+      margin-bottom: 6px;
+      text-transform: capitalize;
+    }
+
+    .arbol {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 6px;
+      position: relative;
+    }
+
+    .arbol.urgente {
+      background: #ffebee;
+      border-left: 6px solid #c62828;
+    }
+
+    .nombre {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .acciones {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+    }
+
+    .acciones button {
+      border: none;
+      background: none;
+      font-size: 18px;
+      margin-left: 6px;
+    }
+
+    .tooltip {
+      margin-top: 6px;
+      font-size: 13px;
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .vacio {
+      color: #777;
+      font-style: italic;
+      margin-top: 6px;
+    }
+
+    #agregar {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #2e7d32;
+      color: white;
+      font-size: 32px;
+      border: none;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Modal */
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #modal .contenido {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 320px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .botones {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .botones button {
+      flex: 1;
+      margin: 4px;
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>🌳 Riego semanal</header>
+
+<div id="calendario"></div>
+
+<button id="agregar" onclick="abrirModal()">＋</button>
+
+<div id="modal">
+  <div class="contenido">
+    <h3>Árbol</h3>
+    <input id="nombre" placeholder="Nombre del árbol">
+    <input id="frecuencia" type="number" placeholder="Cada cuántos días">
+    <div class="botones">
+      <button onclick="guardar()">Guardar</button>
+      <button onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let arboles = JSON.parse(localStorage.getItem('arboles')) || [];
+  let editando = null;
+  let semanaOffset = 0;
+
+  const calendario = document.getElementById('calendario');
+
+  function guardarDatos() {
+    localStorage.setItem('arboles', JSON.stringify(arboles));
+  }
+
+  function abrirModal(i = null) {
+    editando = i;
+    modal.style.display = 'flex';
+
+    if (i !== null) {
+      nombre.value = arboles[i].nombre;
+      frecuencia.value = arboles[i].freq;
+    } else {
+      nombre.value = '';
+      frecuencia.value = '';
+    }
+  }
+
+  function cerrarModal() {
+    modal.style.display = 'none';
+  }
+
+  function guardar() {
+    const n = nombre.value.trim();
+    const f = parseInt(frecuencia.value);
+
+    if (!n || !f) return alert('Completá todos los datos');
+
+    if (editando !== null) {
+      arboles[editando].nombre = n;
+      arboles[editando].freq = f;
+    } else {
+      arboles.push({
+        nombre: n,
+        freq: f,
+        inicio: new Date().toISOString()
+      });
+    }
+
+    guardarDatos();
+    cerrarModal();
+    render();
+  }
+
+  function borrar(i) {
+    if (!confirm('¿Borrar este árbol?')) return;
+    arboles.splice(i, 1);
+    guardarDatos();
+    render();
+  }
+
+  // Swipe
+  let startX = 0;
+  calendario.addEventListener('touchstart', e => {
+    startX = e.changedTouches[0].screenX;
+  });
+
+  calendario.addEventListener('touchend', e => {
+    const endX = e.changedTouches[0].screenX;
+    if (endX < startX - 50) semanaOffset++;
+    if (endX > startX + 50) semanaOffset--;
+    render();
+  });
+
+  function render() {
+    calendario.innerHTML = '';
+
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() + semanaOffset * 7);
+
+    for (let d = 0; d < 7; d++) {
+      const fecha = new Date(inicioSemana);
+      fecha.setDate(inicioSemana.getDate() + d);
+      fecha.setHours(0,0,0,0);
+
+      const dia = document.createElement('div');
+      dia.className = 'dia' + (fecha.getTime() === hoy.getTime() ? ' hoy' : '');
+
+      dia.innerHTML = `<div class="titulo-dia">
+        ${fecha.toLocaleDateString('es-ES', { weekday: 'long' })} ${fecha.getDate()}
+      </div>`;
+
+      let hay = false;
+
+      arboles.forEach((a, i) => {
+        const inicio = new Date(a.inicio);
+        inicio.setHours(0,0,0,0);
+        const diff = Math.floor((fecha - inicio) / 86400000);
+
+        if (diff >= 0 && diff % a.freq === 0) {
+          hay = true;
+
+          const proximo = new Date(fecha);
+          proximo.setDate(fecha.getDate() + a.freq);
+
+          const card = document.createElement('div');
+          card.className = 'arbol' + (fecha.getTime() === hoy.getTime() ? ' urgente' : '');
+
+          card.innerHTML = `
+            <div class="nombre">${a.nombre}</div>
+            <div class="acciones">
+              <button onclick="abrirModal(${i})">✏️</button>
+              <button onclick="borrar(${i})">🗑</button>
+            </div>
+            <div class="tooltip">
+              Cada ${a.freq} días<br>
+              Próximo riego: ${proximo.toLocaleDateString('es-ES')}
+            </div>
+          `;
+
+          dia.appendChild(card);
+        }
+      });
+
+      if (!hay) {
+        const v = document.createElement('div');
+        v.className = 'vacio';
+        v.textContent = 'No hay riegos';
+        dia.appendChild(v);
+      }
+
+      calendario.appendChild(dia);
+    }
+  }
+
+  render();
+</script>
+
+</body>
+</html>
