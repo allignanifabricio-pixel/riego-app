@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f4f4f4;
+  color: #333;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #4caf50;
+  color: white;
+  padding: 10px 15px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+#modoOscuro {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+main {
+  padding: 15px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+form button {
+  padding: 8px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.riego-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.acciones button {
+  margin-left: 5px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+}
+
+/* 🌙 Modo oscuro */
+body.oscuro {
+  background: #121212;
+  color: #eee;
+}
+
+body.oscuro header {
+  background: #1b5e20;
+}
+
+body.oscuro .riego-item {
+  background: #1e1e1e;
+}
