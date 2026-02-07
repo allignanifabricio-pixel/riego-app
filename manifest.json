@@ -1,0 +1,9 @@
+{
+  "name": "Riego semanal",
+  "short_name": "Riego",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#4caf50",
+  "theme_color": "#4caf50"
+}

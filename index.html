@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Riego semanal</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4caf50">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🌱 Riego semanal</h1>
+  <button id="modoOscuro" aria-label="Modo nocturno">🌙</button>
+</header>
+
+<main id="zonaSwipe">
+
+  <!-- Botón agregar -->
+  <button id="btnAgregar">➕ Agregar árbol</button>
+
+  <!-- Formulario -->
+  <div id="formContainer" class="oculto">
+    <form id="formRiego">
+
+      <label>
+        Día inicial de riego
+        <input type="date" id="fechaInicio" required>
+      </label>
+
+      <label>
+        Árbol
+        <input type="text" id="arbol" placeholder="Ej: Naranjo" required>
+      </label>
+
+      <label>
+        Cada cuántos días
+        <input type="number" id="frecuencia" min="1" placeholder="Ej: 3" required>
+      </label>
+
+      <button type="submit">Guardar</button>
+
+    </form>
+  </div>
+
+  <!-- Título de semana -->
+  <h2 id="tituloSemana"></h2>
+
+  <!-- Calendario -->
+  <div id="calendario"></div>
+
+</main>
+
+<!-- Lógica -->
+<script src="app.js"></script>
+
+<!-- Service Worker -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js");
+    });
+  }
+</script>
+
+</body>
+</html>
