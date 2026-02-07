@@ -1,0 +1,97 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f4f4f4;
+  color: #333;
+}
+
+header {
+  background: #4caf50;
+  color: white;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#modoOscuro {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+main {
+  padding: 10px;
+}
+
+#btnAgregar {
+  margin-bottom: 10px;
+}
+
+#formContainer {
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.oculto {
+  display: none;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#calendario {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dia {
+  background: white;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.riego {
+  background: #e8f5e9;
+  padding: 6px;
+  margin-top: 6px;
+  border-radius: 4px;
+}
+
+.riego .acciones {
+  margin-top: 4px;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* 🌙 oscuro */
+body.oscuro {
+  background: #121212;
+  color: #eee;
+}
+
+body.oscuro header {
+  background: #1b5e20;
+}
+
+body.oscuro .dia {
+  background: #1e1e1e;
+}
+
+body.oscuro .riego {
+  background: #2e7d32;
+}
